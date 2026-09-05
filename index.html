@@ -1,11 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset ="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matchday Ledger</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matchday Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <h1>Matchday Ledger</h1>
+
+<div class="app">
+
+  <header class="hero">
+    <div class="hero-top">
+      <span class="hero-kicker">Season log</span>
+    </div>
+    <div class="hero-main">
+      <div class="hero-headline">
+        <h1>Matchday Ledger</h1>
+        <p class="hero-sub">Every fixture, every fee, every rating — in one record.</p>
+      </div>
+      <div class="hero-figure">
+        <span class="hero-figure-label">Net this season</span>
+        <span class="hero-figure-value" id="kpi-hero-net">€0</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" data-category="all">All fixtures</button>
+      <button class="tab" data-category="main">Matches</button>
+      <button class="tab" data-category="minor">Less important</button>
+    </div>
+    <div class="toolbar-actions">
+      <input type="search" id="search-input" placeholder="Search team, venue, competition…">
+      <select id="filter-competition"><option value="">All competitions</option></select>
+      <button class="btn btn-primary" id="btn-add-match">+ Add fixture</button>
+    </div>
+  </div>
+
+  <section class="kpi-row" id="kpi-row"></section>
+
+  <section class="charts-row">
+    <div class="panel panel-wide">
+      <div class="panel-head"><h2>Net profit over time</h2></div>
+      <canvas id="chart-profit" height="110"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Fixtures by competition</h2></div>
+      <canvas id="chart-competition" height="150"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Role split</h2></div>
+      <canvas id="chart-role" height="150"></canvas>
+    </div>
+  </section>
+
+  <section class="lower-grid">
+    <div class="panel">
+      <div class="panel-head"><h2>Players who stood out</h2></div>
+      <div id="standout-list" class="standout-list"></div>
+    </div>
+
+    <div class="panel panel-wide">
+      <div class="panel-head"><h2>Fixture log</h2></div>
+      <div class="table-wrap">
+        <table class="ledger">
+          <thead>
+            <tr>
+              <th>Date</th><th>Competition</th><th>Fixture</th><th>Role</th>
+              <th>Fee</th><th>Net</th><th>Self</th><th>Observer</th><th>Cards</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="ledger-body"></tbody>
+        </table>
+        <div class="empty-state" id="empty-state" hidden>
+          <p class="empty-title">No fixtures logged yet</p>
+          <button class="btn btn-primary" id="btn-empty-add">+ Add fixture</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="drawer-backdrop" id="drawer-backdrop" hidden>
+  <form class="drawer" id="fixture-form">
+    <div class="drawer-head">
+      <h2 id="drawer-title">Add fixture</h2>
+      <button type="button" class="icon-btn" id="drawer-close">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <input type="hidden" id="f-id">
+      <label class="field"><span>Category</span>
+        <select id="f-category"><option value="main">Match</option><option value="minor">Less important</option></select>
+      </label>
+      <label class="field"><span>Date</span><input type="date" id="f-date" required></label>
+      <label class="field"><span>Competition</span><input type="text" id="f-competition"></label>
+      <label class="field"><span>Venue</span><input type="text" id="f-venue"></label>
+      <label class="field"><span>Role</span>
+        <select id="f-role"><option>Referee</option><option>Assistant Referee 1</option><option>Assistant Referee 2</option><option>Fourth Official</option><option>VAR</option></select>
+      </label>
+      <label class="field"><span>Home team</span><input type="text" id="f-home"></label>
+      <label class="field"><span>Away team</span><input type="text" id="f-away"></label>
+      <label class="field"><span>Result</span><input type="text" id="f-result"></label>
+      <label class="field"><span>Fee (€)</span><input type="number" step="0.01" id="f-fee" value="0"></label>
+      <label class="field"><span>Travel expense (€)</span><input type="number" step="0.01" id="f-expense" value="0"></label>
+      <label class="field"><span>Self-rating (1-10)</span><input type="number" min="1" max="10" step="0.1" id="f-self-rating"></label>
+      <label class="field"><span>Observer rating (0-10)</span><input type="number" min="0" max="10" step="0.1" id="f-observer-rating"></label>
+      <label class="field"><span>Yellow cards</span><input type="number" min="0" id="f-yellow" value="0"></label>
+      <label class="field"><span>Red cards</span><input type="number" min="0" id="f-red" value="0"></label>
+      <label class="field"><span>Standout player</span><input type="text" id="f-player-name"></label>
+      <label class="field"><span>Player's team</span><input type="text" id="f-player-team"></label>
+      <label class="field"><span>Impression</span>
+        <select id="f-impression"><option value="">—</option><option value="positive">Positive</option><option value="negative">Negative</option></select>
+      </label>
+    </div>
+    <div class="drawer-foot">
+      <button type="button" class="btn btn-ghost" id="btn-delete-fixture" hidden>Delete</button>
+      <button type="button" class="btn btn-ghost" id="btn-cancel-fixture">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save fixture</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
