@@ -17,6 +17,7 @@ const authSubmitBtn = document.getElementById('auth-submit-btn');
 function showApp() {
   authScreen.hidden = true;
   appScreen.hidden = false;
+  loadFixtures();
 }
 
 function showAuth() {
@@ -85,11 +86,15 @@ const fixtureForm = document.getElementById('fixture-form');
 
 function openDrawer() {
   drawerBackdrop.hidden = false;
+  requestAnimationFrame(() => drawerBackdrop.classList.add('is-open'));
 }
 
 function closeDrawer() {
-  drawerBackdrop.hidden = true;
-  fixtureForm.reset();
+  drawerBackdrop.classList.remove('is-open');
+  setTimeout(() => {
+    drawerBackdrop.hidden = true;
+    fixtureForm.reset();
+  }, 250);
 }
 
 document.getElementById('btn-add-match').addEventListener('click', openDrawer);
@@ -129,5 +134,134 @@ fixtureForm.addEventListener('submit', async (e) => {
   }
 
   closeDrawer();
+  loadFixtures();
   alert('Fixture saved!');
 });
+
+let fixturesData = [];
+
+async function loadFixtures() {
+  const { data, error } = await client
+    .from('fixtures')
+    .select('*')
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.error('Failed to load fixtures:', error.message);
+    return;
+  }
+
+  fixturesData = data;
+  renderKpis(fixturesData);
+  renderTable(fixturesData);
+  renderCharts(fixturesData);
+}
+
+function renderKpis(rows) {
+  const totalFee = rows.reduce((sum, f) => sum + Number(f.fee || 0), 0);
+  const totalExpense = rows.reduce((sum, f) => sum + Number(f.travel_expense || 0), 0);
+  const netProfit = totalFee - totalExpense;
+
+  document.getElementById('kpi-hero-net').textContent = `€${netProfit.toFixed(2)}`;
+
+  document.getElementById('kpi-row').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Fixtures logged</div><div class="kpi-value">${rows.length}</div></div>
+    <div class="kpi accent-grass"><div class="kpi-label">Fees earned</div><div class="kpi-value">€${totalFee.toFixed(2)}</div></div>
+    <div class="kpi"><div class="kpi-label">Travel expenses</div><div class="kpi-value">€${totalExpense.toFixed(2)}</div></div>
+    <div class="kpi accent-grass"><div class="kpi-label">Net profit</div><div class="kpi-value">€${netProfit.toFixed(2)}</div></div>
+  `;
+}
+
+function renderTable(rows) {
+  const body = document.getElementById('ledger-body');
+  const empty = document.getElementById('empty-state');
+
+  if (rows.length === 0) {
+    body.innerHTML = '';
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  body.innerHTML = rows.map(f => {
+    const net = Number(f.fee || 0) - Number(f.travel_expense || 0);
+    return `
+      <tr>
+        <td>${f.date || '—'}</td>
+        <td>${f.competition || '—'}</td>
+        <td>${f.home_team || '?'} vs ${f.away_team || '?'}</td>
+        <td>${f.role || '—'}</td>
+        <td>€${Number(f.fee || 0).toFixed(2)}</td>
+        <td>€${net.toFixed(2)}</td>
+        <td>${f.self_rating ?? '—'}</td>
+        <td>${f.observer_rating ?? '—'}</td>
+        <td>${f.yellow_cards || 0}Y / ${f.red_cards || 0}R</td>
+        <td></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+let chartProfit, chartCompetition, chartRole;
+
+function renderCharts(rows) {
+  renderProfitChart(rows);
+  renderCompetitionChart(rows);
+  renderRoleChart(rows);
+}
+
+function renderProfitChart(rows) {
+  const byMonth = {};
+  rows.forEach(f => {
+    if (!f.date) return;
+    const month = f.date.slice(0, 7); // "2026-09-11" -> "2026-09"
+    const net = Number(f.fee || 0) - Number(f.travel_expense || 0);
+    byMonth[month] = (byMonth[month] || 0) + net;
+  });
+
+  const months = Object.keys(byMonth).sort();
+  const values = months.map(m => byMonth[m]);
+
+  if (chartProfit) chartProfit.destroy();
+  chartProfit = new Chart(document.getElementById('chart-profit'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [{ label: 'Net profit (€)', data: values, borderColor: '#2E8B57', tension: 0.3 }]
+    }
+  });
+}
+
+function renderCompetitionChart(rows) {
+  const counts = {};
+  rows.forEach(f => {
+    const comp = f.competition || 'Unspecified';
+    counts[comp] = (counts[comp] || 0) + 1;
+  });
+
+  if (chartCompetition) chartCompetition.destroy();
+  chartCompetition = new Chart(document.getElementById('chart-competition'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{ label: 'Fixtures', data: Object.values(counts), backgroundColor: '#2E8B57' }]
+    }
+  });
+}
+
+function renderRoleChart(rows) {
+  const counts = {};
+  rows.forEach(f => {
+    const role = f.role || 'Unspecified';
+    counts[role] = (counts[role] || 0) + 1;
+  });
+
+  if (chartRole) chartRole.destroy();
+  chartRole = new Chart(document.getElementById('chart-role'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{ data: Object.values(counts), backgroundColor: ['#2E8B57', '#E8B923', '#C23B3B', '#6B8FA3', '#8A6BB1'] }]
+    }
+  });
+}
