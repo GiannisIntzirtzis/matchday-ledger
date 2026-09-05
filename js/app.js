@@ -79,3 +79,55 @@ async function checkSession() {
 }
 
 checkSession();
+
+const drawerBackdrop = document.getElementById('drawer-backdrop');
+const fixtureForm = document.getElementById('fixture-form');
+
+function openDrawer() {
+  drawerBackdrop.hidden = false;
+}
+
+function closeDrawer() {
+  drawerBackdrop.hidden = true;
+  fixtureForm.reset();
+}
+
+document.getElementById('btn-add-match').addEventListener('click', openDrawer);
+document.getElementById('btn-empty-add').addEventListener('click', openDrawer);
+document.getElementById('btn-cancel-fixture').addEventListener('click', closeDrawer);
+document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+
+fixtureForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const newFixture = {
+    user_id: currentUser.id,
+    category: document.getElementById('f-category').value,
+    date: document.getElementById('f-date').value || null,
+    competition: document.getElementById('f-competition').value,
+    venue: document.getElementById('f-venue').value,
+    role: document.getElementById('f-role').value,
+    home_team: document.getElementById('f-home').value,
+    away_team: document.getElementById('f-away').value,
+    result: document.getElementById('f-result').value,
+    fee: Number(document.getElementById('f-fee').value) || 0,
+    travel_expense: Number(document.getElementById('f-expense').value) || 0,
+    self_rating: document.getElementById('f-self-rating').value || null,
+    observer_rating: document.getElementById('f-observer-rating').value || null,
+    yellow_cards: Number(document.getElementById('f-yellow').value) || 0,
+    red_cards: Number(document.getElementById('f-red').value) || 0,
+    player_name: document.getElementById('f-player-name').value,
+    player_team: document.getElementById('f-player-team').value,
+    impression: document.getElementById('f-impression').value,
+  };
+
+  const { error } = await client.from('fixtures').insert(newFixture);
+
+  if (error) {
+    alert('Could not save fixture: ' + error.message);
+    return;
+  }
+
+  closeDrawer();
+  alert('Fixture saved!');
+});
