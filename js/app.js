@@ -84,7 +84,33 @@ checkSession();
 const drawerBackdrop = document.getElementById('drawer-backdrop');
 const fixtureForm = document.getElementById('fixture-form');
 
-function openDrawer() {
+let editingId = null;
+
+function openDrawer(fixture = null) {
+  editingId = fixture ? fixture.id : null;
+  document.getElementById('drawer-title').textContent = fixture ? 'Edit fixture' : 'Add fixture';
+  document.getElementById('btn-delete-fixture').hidden = !fixture;
+
+  if (fixture) {
+    document.getElementById('f-category').value = fixture.category || 'main';
+    document.getElementById('f-date').value = fixture.date || '';
+    document.getElementById('f-competition').value = fixture.competition || '';
+    document.getElementById('f-venue').value = fixture.venue || '';
+    document.getElementById('f-role').value = fixture.role || 'Referee';
+    document.getElementById('f-home').value = fixture.home_team || '';
+    document.getElementById('f-away').value = fixture.away_team || '';
+    document.getElementById('f-result').value = fixture.result || '';
+    document.getElementById('f-fee').value = fixture.fee ?? 0;
+    document.getElementById('f-expense').value = fixture.travel_expense ?? 0;
+    document.getElementById('f-self-rating').value = fixture.self_rating ?? '';
+    document.getElementById('f-observer-rating').value = fixture.observer_rating ?? '';
+    document.getElementById('f-yellow').value = fixture.yellow_cards ?? 0;
+    document.getElementById('f-red').value = fixture.red_cards ?? 0;
+    document.getElementById('f-player-name').value = fixture.player_name || '';
+    document.getElementById('f-player-team').value = fixture.player_team || '';
+    document.getElementById('f-impression').value = fixture.impression || '';
+  }
+
   drawerBackdrop.hidden = false;
   requestAnimationFrame(() => drawerBackdrop.classList.add('is-open'));
 }
@@ -186,7 +212,7 @@ function renderTable(rows) {
   body.innerHTML = rows.map(f => {
     const net = Number(f.fee || 0) - Number(f.travel_expense || 0);
     return `
-      <tr>
+      <tr data-id="${f.id}" style="cursor:pointer">
         <td>${f.date || '—'}</td>
         <td>${f.competition || '—'}</td>
         <td>${f.home_team || '?'} vs ${f.away_team || '?'}</td>
@@ -200,6 +226,13 @@ function renderTable(rows) {
       </tr>
     `;
   }).join('');
+
+  body.querySelectorAll('tr').forEach(row => {
+    row.addEventListener('click', () => {
+      const fixture = fixturesData.find(f => f.id === row.dataset.id);
+      openDrawer(fixture);
+    });
+  });
 }
 
 let chartProfit, chartCompetition, chartRole;
