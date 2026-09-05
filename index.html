@@ -9,8 +9,33 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div id="auth-screen">
+  <div class="auth-box">
+    <h1>Matchday Ledger</h1>
+    <p class="hero-sub">Sign in to see your fixtures.</p>
 
-<div class="app">
+    <form id="auth-form">
+      <label class="field">
+        <span>Email</span>
+        <input type="email" id="auth-email" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" id="auth-password" required minlength="6">
+      </label>
+
+      <div id="auth-error"></div>
+
+      <button type="submit" class="btn btn-primary" id="auth-submit-btn">Sign in</button>
+    </form>
+
+    <p class="auth-toggle-text">
+      <span id="auth-toggle-label">Don't have an account?</span>
+      <button type="button" id="auth-toggle-btn">Sign up</button>
+    </p>
+  </div>
+</div>
+<div class="app" id="app-screen" hidden>
 
   <header class="hero">
     <div class="hero-top">
@@ -35,6 +60,7 @@
       <button class="tab" data-category="minor">Less important</button>
     </div>
     <div class="toolbar-actions">
+      <button class="btn btn-ghost" id="btn-sign-out">Sign out</button>
       <input type="search" id="search-input" placeholder="Search team, venue, competition…">
       <select id="filter-competition"><option value="">All competitions</option></select>
       <button class="btn btn-primary" id="btn-add-match">+ Add fixture</button>
