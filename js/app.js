@@ -243,6 +243,32 @@ document.getElementById('btn-delete-fixture').addEventListener('click', async ()
 /* ---------------- Load + render ---------------- */
 
 let fixturesData = [];
+let activeCategory = 'all';
+let searchTerm = '';
+let activeCompetitionFilter = '';
+
+function getFilteredFixtures() {
+  return fixturesData.filter(f => {
+    if (activeCategory !== 'all' && f.category !== activeCategory) return false;
+    if (activeCompetitionFilter && f.competition !== activeCompetitionFilter) return false;
+    if (searchTerm) {
+      const haystack = [
+        f.home_team, f.away_team, f.venue, f.competition, f.role,
+        f.player_name, f.player_team, f.result
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!haystack.includes(searchTerm.toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
+function renderAll() {
+  const rows = getFilteredFixtures();
+  renderKpis(rows);
+  renderTable(rows);
+  renderCharts(rows);
+  renderStandouts(rows);
+}
 
 async function loadFixtures() {
   const { data, error } = await client
@@ -256,9 +282,8 @@ async function loadFixtures() {
   }
 
   fixturesData = data;
-  renderKpis(fixturesData);
-  renderTable(fixturesData);
-  renderCharts(fixturesData);
+  populateCompetitionFilter();
+  renderAll();
 }
 
 function renderKpis(rows) {
@@ -489,3 +514,57 @@ photoInput.addEventListener('change', async () => {
   loadPhotoGallery(fixture);
   loadFixtures();
 });
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('is-active'));
+    tab.classList.add('is-active');
+    activeCategory = tab.dataset.category;
+    renderAll();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', (e) => {
+  searchTerm = e.target.value;
+  renderAll();
+});
+
+document.getElementById('filter-competition').addEventListener('change', (e) => {
+  activeCompetitionFilter = e.target.value;
+  renderAll();
+});
+
+function populateCompetitionFilter() {
+  const select = document.getElementById('filter-competition');
+  const current = select.value;
+  const allCompetitions = Object.values(COMPETITION_GROUPS).flat();
+  select.innerHTML = '<option value="">Όλες οι διοργανώσεις</option>' +
+    allCompetitions.map(c => `<option value="${c}">${c}</option>`).join('');
+  select.value = current;
+}
+
+function renderStandouts(rows) {
+  const withPlayers = rows.filter(f => f.player_name).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const container = document.getElementById('standout-list');
+
+  if (withPlayers.length === 0) {
+    container.innerHTML = '<p style="color:var(--chalk-faint);font-size:13px;">Δεν έχεις καταγράψει παίκτη ακόμα.</p>';
+    return;
+  }
+
+  container.innerHTML = withPlayers.map(f => {
+    const isNegative = f.impression === 'negative';
+    const badge = isNegative
+      ? '<span style="color:#E38080;font-size:11px;">Αρνητική</span>'
+      : '<span style="color:var(--grass-bright);font-size:11px;">Θετική</span>';
+    return `
+      <div style="border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;">
+          <strong style="font-size:14px;">${f.player_name}</strong>
+          ${badge}
+        </div>
+        <div style="font-size:12px;color:var(--chalk-faint);">${f.player_team || ''} · ${f.date || ''}</div>
+      </div>
+    `;
+  }).join('');
+}
