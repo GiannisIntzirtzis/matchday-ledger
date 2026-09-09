@@ -31,7 +31,13 @@ async function showApp() {
   appScreen.hidden = false;
   await loadProfile();
   checkAdminAccess();
+  updateGreeting();
   loadFixtures();
+}
+
+function updateGreeting() {
+  const name = currentProfile?.first_name;
+  document.getElementById('hero-greeting').textContent = name ? `Γεια σου, ${name}` : 'Καταγραφή σεζόν';
 }
 
 function showAuth() {
@@ -41,6 +47,8 @@ function showAuth() {
 
 const signupFields = document.getElementById('signup-fields');
 
+const signupRequiredFields = ['auth-first-name', 'auth-last-name', 'auth-birth-year', 'auth-referee-school'];
+
 authToggleBtn.addEventListener('click', () => {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   authSubmitBtn.textContent = authMode === 'signin' ? 'Σύνδεση' : 'Εγγραφή';
@@ -48,6 +56,11 @@ authToggleBtn.addEventListener('click', () => {
   authToggleLabel.textContent = authMode === 'signin' ? 'Δεν έχεις λογαριασμό;' : 'Έχεις ήδη λογαριασμό;';
   authError.textContent = '';
   signupFields.hidden = authMode !== 'signup';
+
+  const isSignup = authMode === 'signup';
+  signupRequiredFields.forEach(id => {
+    document.getElementById(id).required = isSignup;
+  });
 });
 
 authForm.addEventListener('submit', async (e) => {
@@ -56,6 +69,21 @@ authForm.addEventListener('submit', async (e) => {
 
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-password').value;
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+  if (!emailPattern.test(email)) {
+    authError.textContent = 'Δώσε ένα έγκυρο email (π.χ. name@example.com).';
+    return;
+  }
+
+  if (authMode === 'signup') {
+    const hasLetter = /[a-zA-Zα-ωΑ-Ω]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (password.length < 8 || !hasLetter || !hasNumber) {
+      authError.textContent = 'Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες, με τουλάχιστον ένα γράμμα και έναν αριθμό.';
+      return;
+    }
+  }
 
   let result;
   if (authMode === 'signin') {

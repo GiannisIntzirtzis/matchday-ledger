@@ -19,23 +19,23 @@
       <div id="signup-fields" hidden>
         <label class="field">
           <span>Όνομα</span>
-          <input type="text" id="auth-first-name">
+          <input type="text" id="auth-first-name" required>
         </label>
         <label class="field">
           <span>Επώνυμο</span>
-          <input type="text" id="auth-last-name">
+          <input type="text" id="auth-last-name" required>
         </label>
         <label class="field">
           <span>Έτος γέννησης</span>
-          <input type="number" id="auth-birth-year" min="1940" max="2015">
+          <input type="number" id="auth-birth-year" min="1940" max="2015" required>
         </label>
         <label class="field">
           <span>Σχολή διαιτησίας</span>
-          <input type="text" id="auth-referee-school">
+          <input type="text" id="auth-referee-school" required>
         </label>
         <label class="field">
           <span>Κατάσταση αξιολόγησης</span>
-          <select id="auth-evaluation-status">
+          <select id="auth-evaluation-status" required>
             <option value="Μη Αξιολογημένος">Μη Αξιολογημένος</option>
             <option value="Αξιολογημένος">Αξιολογημένος</option>
           </select>
@@ -48,7 +48,7 @@
       </label>
       <label class="field">
         <span>Κωδικός</span>
-        <input type="password" id="auth-password" required minlength="6">
+        <input type="password" id="auth-password" required minlength="8">
       </label>
 
       <div id="auth-error"></div>
@@ -67,7 +67,7 @@
 
   <header class="hero">
     <div class="hero-top">
-      <span class="hero-kicker">Καταγραφή της σεζόν</span>
+      <span class="hero-kicker" id="hero-greeting">Καταγραφή σεζόν</span>
     </div>
     <div class="hero-main">
       <div class="hero-headline">
