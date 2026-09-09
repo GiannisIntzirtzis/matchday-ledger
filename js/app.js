@@ -26,10 +26,11 @@ const authToggleBtn = document.getElementById('auth-toggle-btn');
 const authToggleLabel = document.getElementById('auth-toggle-label');
 const authSubmitBtn = document.getElementById('auth-submit-btn');
 
-function showApp() {
+async function showApp() {
   authScreen.hidden = true;
   appScreen.hidden = false;
-  loadProfile();
+  await loadProfile();
+  checkAdminAccess();
   loadFixtures();
 }
 
@@ -682,3 +683,97 @@ profileForm.addEventListener('submit', async (e) => {
   currentProfile = { ...currentProfile, ...updatedProfile };
   closeProfileDrawer();
 });
+/* ---------------- Admin view ---------------- */
+
+const adminScreen = document.getElementById('admin-screen');
+const btnAdminView = document.getElementById('btn-admin-view');
+
+function checkAdminAccess() {
+  if (currentProfile?.role === 'admin') {
+    btnAdminView.hidden = false;
+  } else {
+    btnAdminView.hidden = true;
+  }
+}
+
+btnAdminView.addEventListener('click', async () => {
+  appScreen.hidden = true;
+  adminScreen.hidden = false;
+  await loadAdminData();
+});
+
+document.getElementById('btn-back-to-dashboard').addEventListener('click', () => {
+  adminScreen.hidden = true;
+  appScreen.hidden = false;
+});
+
+async function loadAdminData() {
+  const container = document.getElementById('admin-user-list');
+  container.innerHTML = '<p style="color:var(--chalk-faint);">Φόρτωση...</p>';
+
+  const { data: profiles, error: profilesError } = await client.from('profiles').select('*');
+  const { data: allFixtures, error: fixturesError } = await client.from('fixtures').select('*');
+
+  if (profilesError || fixturesError) {
+    container.innerHTML = `<p style="color:#E38080;">Σφάλμα φόρτωσης: ${(profilesError || fixturesError).message}</p>`;
+    return;
+  }
+
+  container.innerHTML = profiles.map(p => {
+    const userFixtures = allFixtures.filter(f => f.user_id === p.id);
+    const totalFee = userFixtures.reduce((s, f) => s + Number(f.fee || 0), 0);
+    const totalMatches = userFixtures.length;
+    const totalPhotos = userFixtures.reduce((s, f) => s + (f.photo_paths?.length || 0), 0);
+
+    return `
+      <div class="panel" data-user-id="${p.id}" style="margin-bottom:12px;cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <strong style="font-size:16px;">${p.first_name || '—'} ${p.last_name || ''}</strong>
+          <span style="font-size:11px;color:var(--chalk-faint);">${p.role}</span>
+        </div>
+        <div style="font-size:12px;color:var(--chalk-faint);margin-top:4px;">
+          ${p.referee_school || 'Χωρίς σχολή'} · ${p.evaluation_status || '—'} · Γεν. ${p.birth_year || '—'}
+        </div>
+        <div style="font-size:12px;color:var(--chalk-faint);">
+          ${p.phone || '—'} · ${p.address || '—'}
+        </div>
+        <div style="display:flex;gap:20px;margin-top:10px;font-size:13px;">
+          <span><strong>${totalMatches}</strong> αγώνες</span>
+          <span><strong>€${totalFee.toFixed(2)}</strong> αμοιβές</span>
+          <span><strong>${totalPhotos}</strong> φωτογραφίες</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+   
+  container.querySelectorAll('.panel').forEach(card => {
+    card.addEventListener('click', () => viewUserAsAdmin(card.dataset.userId, profiles, allFixtures));
+  });
+}
+
+function viewUserAsAdmin(userId, profiles, allFixtures) {
+  const profile = profiles.find(p => p.id === userId);
+  const userFixtures = allFixtures.filter(f => f.user_id === userId);
+
+  adminScreen.hidden = true;
+  appScreen.hidden = false;
+
+  document.getElementById('kpi-hero-net').closest('.hero').querySelector('.hero-headline h1').textContent =
+    `${profile.first_name || ''} ${profile.last_name || ''} — Προβολή διαχειριστή`;
+
+  renderKpis(userFixtures);
+  renderTable(userFixtures);
+  renderCharts(userFixtures);
+  renderStandouts(userFixtures);
+
+  document.getElementById('btn-add-match').hidden = true;
+  document.getElementById('btn-open-profile').hidden = true;
+  document.getElementById('btn-admin-view').hidden = true;
+  document.getElementById('btn-sign-out').textContent = 'Έξοδος από προβολή';
+
+  const originalSignOut = () => {
+    location.reload();
+  };
+  document.getElementById('btn-sign-out').replaceWith(document.getElementById('btn-sign-out').cloneNode(true));
+  document.getElementById('btn-sign-out').addEventListener('click', originalSignOut);
+}

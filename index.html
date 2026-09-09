@@ -91,6 +91,7 @@
     </div>
     <div class="toolbar-actions">
       <button class="btn btn-ghost" id="btn-open-profile">Το προφίλ μου</button>
+      <button class="btn btn-ghost" id="btn-admin-view" hidden>Διαχείριση χρηστών</button>
       <button class="btn btn-ghost" id="btn-sign-out">Αποσύνδεση</button>
       <input type="search" id="search-input" placeholder="Αναζήτηση ομάδας, γηπέδου, διοργάνωσης…">
       <select id="filter-competition"><option value="">Όλες οι διοργανώσεις</option></select>
@@ -140,6 +141,14 @@
     </div>
   </div>
 </section>
+</div>
+
+<div id="admin-screen" hidden>
+  <div class="toolbar">
+    <button class="btn btn-ghost" id="btn-back-to-dashboard">&larr; Πίσω στο dashboard</button>
+  </div>
+  <div id="admin-user-list"></div>
+</div>
 
 <div class="drawer-backdrop" id="drawer-backdrop" hidden>
   <form class="drawer" id="fixture-form">
