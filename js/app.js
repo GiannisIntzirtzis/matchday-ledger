@@ -29,6 +29,7 @@ const authSubmitBtn = document.getElementById('auth-submit-btn');
 function showApp() {
   authScreen.hidden = true;
   appScreen.hidden = false;
+  loadProfile();
   loadFixtures();
 }
 
@@ -37,12 +38,15 @@ function showAuth() {
   appScreen.hidden = true;
 }
 
+const signupFields = document.getElementById('signup-fields');
+
 authToggleBtn.addEventListener('click', () => {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   authSubmitBtn.textContent = authMode === 'signin' ? 'Σύνδεση' : 'Εγγραφή';
   authToggleBtn.textContent = authMode === 'signin' ? 'Εγγραφή' : 'Σύνδεση';
   authToggleLabel.textContent = authMode === 'signin' ? 'Δεν έχεις λογαριασμό;' : 'Έχεις ήδη λογαριασμό;';
   authError.textContent = '';
+  signupFields.hidden = authMode !== 'signup';
 });
 
 authForm.addEventListener('submit', async (e) => {
@@ -65,9 +69,34 @@ authForm.addEventListener('submit', async (e) => {
   }
 
   if (authMode === 'signup') {
-    authError.textContent = 'Ο λογαριασμός δημιουργήθηκε — μπορείς να συνδεθείς τώρα.';
+    const newUser = result.data.user;
+
+    if (!result.data.session) {
+      authError.textContent = 'Ο λογαριασμός δημιουργήθηκε! Επιβεβαίωσε το email σου, μετά συνδέσου για να ολοκληρώσεις το προφίλ σου.';
+      authMode = 'signin';
+      authSubmitBtn.textContent = 'Σύνδεση';
+      signupFields.hidden = true;
+      return;
+    }
+
+    const { error: profileError } = await client.from('profiles').insert({
+      id: newUser.id,
+      first_name: document.getElementById('auth-first-name').value,
+      last_name: document.getElementById('auth-last-name').value,
+      birth_year: Number(document.getElementById('auth-birth-year').value) || null,
+      referee_school: document.getElementById('auth-referee-school').value,
+      evaluation_status: document.getElementById('auth-evaluation-status').value,
+    });
+
+    if (profileError) {
+      authError.textContent = 'Ο λογαριασμός δημιουργήθηκε, αλλά κάτι πήγε στραβά με το προφίλ: ' + profileError.message;
+    } else {
+      authError.textContent = 'Ο λογαριασμός δημιουργήθηκε — μπορείς να συνδεθείς τώρα.';
+    }
+
     authMode = 'signin';
     authSubmitBtn.textContent = 'Σύνδεση';
+    signupFields.hidden = true;
     return;
   }
 
@@ -376,22 +405,39 @@ function renderProfitChart(rows) {
 
 function renderCompetitionChart(rows) {
   const allCompetitions = Object.values(COMPETITION_GROUPS).flat();
+  const roles = ['Διαιτητής', 'Βοηθός Διαιτητής 1', 'Βοηθός Διαιτητής 2'];
+  const roleColors = {
+    'Διαιτητής': '#2E8B57',
+    'Βοηθός Διαιτητής 1': '#E8B923',
+    'Βοηθός Διαιτητής 2': '#C23B3B',
+  };
+
   const counts = {};
-  allCompetitions.forEach(c => counts[c] = 0);
-  rows.forEach(f => {
-    if (counts.hasOwnProperty(f.competition)) counts[f.competition]++;
+  allCompetitions.forEach(c => {
+    counts[c] = { 'Διαιτητής': 0, 'Βοηθός Διαιτητής 1': 0, 'Βοηθός Διαιτητής 2': 0 };
   });
+  rows.forEach(f => {
+    if (counts[f.competition] && counts[f.competition].hasOwnProperty(f.role)) {
+      counts[f.competition][f.role]++;
+    }
+  });
+
+  const datasets = roles.map(role => ({
+    label: role,
+    data: allCompetitions.map(c => counts[c][role]),
+    backgroundColor: roleColors[role],
+  }));
 
   if (chartCompetition) chartCompetition.destroy();
   chartCompetition = new Chart(document.getElementById('chart-competition'), {
     type: 'bar',
-    data: {
-      labels: allCompetitions,
-      datasets: [{ label: 'Αγώνες', data: allCompetitions.map(c => counts[c]), backgroundColor: '#2E8B57' }]
-    },
+    data: { labels: allCompetitions, datasets },
     options: {
-      scales: { x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 60 } } }
-    }
+      scales: {
+        x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 60 } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } },
+      },
+    },
   });
 }
 
@@ -568,3 +614,71 @@ function renderStandouts(rows) {
     `;
   }).join('');
 }
+
+/* ---------------- Προφίλ χρήστη ---------------- */
+
+let currentProfile = null;
+
+const profileDrawerBackdrop = document.getElementById('profile-drawer-backdrop');
+const profileForm = document.getElementById('profile-form');
+
+async function loadProfile() {
+  const { data, error } = await client
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (error) {
+    console.error('Αποτυχία φόρτωσης προφίλ:', error.message);
+    return;
+  }
+
+  currentProfile = data;
+}
+
+function openProfileDrawer() {
+  document.getElementById('p-first-name').value = currentProfile?.first_name || '';
+  document.getElementById('p-last-name').value = currentProfile?.last_name || '';
+  document.getElementById('p-birth-year').value = currentProfile?.birth_year || '';
+  document.getElementById('p-referee-school').value = currentProfile?.referee_school || '';
+  document.getElementById('p-evaluation-status').value = currentProfile?.evaluation_status || 'Μη Αξιολογημένος';
+  document.getElementById('p-phone').value = currentProfile?.phone || '';
+  document.getElementById('p-address').value = currentProfile?.address || '';
+
+  profileDrawerBackdrop.hidden = false;
+  requestAnimationFrame(() => profileDrawerBackdrop.classList.add('is-open'));
+}
+
+function closeProfileDrawer() {
+  profileDrawerBackdrop.classList.remove('is-open');
+  setTimeout(() => { profileDrawerBackdrop.hidden = true; }, 250);
+}
+
+document.getElementById('btn-open-profile').addEventListener('click', openProfileDrawer);
+document.getElementById('profile-drawer-close').addEventListener('click', closeProfileDrawer);
+document.getElementById('btn-cancel-profile').addEventListener('click', closeProfileDrawer);
+
+profileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const updatedProfile = {
+    first_name: document.getElementById('p-first-name').value,
+    last_name: document.getElementById('p-last-name').value,
+    birth_year: Number(document.getElementById('p-birth-year').value) || null,
+    referee_school: document.getElementById('p-referee-school').value,
+    evaluation_status: document.getElementById('p-evaluation-status').value,
+    phone: document.getElementById('p-phone').value,
+    address: document.getElementById('p-address').value,
+  };
+
+  const { error } = await client.from('profiles').update(updatedProfile).eq('id', currentUser.id);
+
+  if (error) {
+    alert('Αποτυχία αποθήκευσης προφίλ: ' + error.message);
+    return;
+  }
+
+  currentProfile = { ...currentProfile, ...updatedProfile };
+  closeProfileDrawer();
+});

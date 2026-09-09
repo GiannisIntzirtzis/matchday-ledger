@@ -16,6 +16,32 @@
     <p class="hero-sub">Συνδέσου για να δεις τους αγώνες σου.</p>
 
     <form id="auth-form">
+      <div id="signup-fields" hidden>
+        <label class="field">
+          <span>Όνομα</span>
+          <input type="text" id="auth-first-name">
+        </label>
+        <label class="field">
+          <span>Επώνυμο</span>
+          <input type="text" id="auth-last-name">
+        </label>
+        <label class="field">
+          <span>Έτος γέννησης</span>
+          <input type="number" id="auth-birth-year" min="1940" max="2015">
+        </label>
+        <label class="field">
+          <span>Σχολή διαιτησίας</span>
+          <input type="text" id="auth-referee-school">
+        </label>
+        <label class="field">
+          <span>Κατάσταση αξιολόγησης</span>
+          <select id="auth-evaluation-status">
+            <option value="Μη Αξιολογημένος">Μη Αξιολογημένος</option>
+            <option value="Αξιολογημένος">Αξιολογημένος</option>
+          </select>
+        </label>
+      </div>
+
       <label class="field">
         <span>Email</span>
         <input type="email" id="auth-email" required>
@@ -64,6 +90,7 @@
       <button class="tab" data-category="Κύπελλο">Κύπελλο</button>
     </div>
     <div class="toolbar-actions">
+      <button class="btn btn-ghost" id="btn-open-profile">Το προφίλ μου</button>
       <button class="btn btn-ghost" id="btn-sign-out">Αποσύνδεση</button>
       <input type="search" id="search-input" placeholder="Αναζήτηση ομάδας, γηπέδου, διοργάνωσης…">
       <select id="filter-competition"><option value="">Όλες οι διοργανώσεις</option></select>
@@ -73,47 +100,46 @@
 
   <section class="kpi-row" id="kpi-row"></section>
 
-  <section class="charts-row">
-    <div class="panel panel-wide">
-      <div class="panel-head"><h2>Καθαρό κέρδος στο χρόνο</h2></div>
-      <canvas id="chart-profit" height="110"></canvas>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h2>Αγώνες ανά διοργάνωση</h2></div>
-      <canvas id="chart-competition" height="150"></canvas>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h2>Κατανομή ρόλων</h2></div>
-      <canvas id="chart-role" height="150"></canvas>
-    </div>
-  </section>
+  <div class="panel" style="margin-bottom:14px;">
+    <div class="panel-head"><h2>Αγώνες ανά διοργάνωση</h2></div>
+    <canvas id="chart-competition" height="140"></canvas>
+  </div>
 
-  <section class="lower-grid">
-    <div class="panel">
-      <div class="panel-head"><h2>Παίκτες που ξεχώρισαν</h2></div>
-      <div id="standout-list" class="standout-list"></div>
-    </div>
+<section class="charts-row">
+  <div class="panel">
+    <div class="panel-head"><h2>Καθαρό κέρδος στο χρόνο</h2></div>
+    <canvas id="chart-profit" height="150"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Κατανομή ρόλων</h2></div>
+    <canvas id="chart-role" height="150"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Παίκτες που ξεχώρισαν</h2></div>
+    <div id="standout-list" class="standout-list"></div>
+  </div>
+</section>
 
-    <div class="panel panel-wide">
-      <div class="panel-head"><h2>Καταγραφή αγώνων</h2></div>
-      <div class="table-wrap">
-        <table class="ledger">
-          <thead>
-            <tr>
-              <th>Ημερομηνία</th><th>Διοργάνωση</th><th>Αγώνας</th><th>Ρόλος</th>
-              <th>Αμοιβή</th><th>Καθαρό</th><th>Αυτοαξ.</th><th>Παρατηρητής</th><th>Κάρτες</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="ledger-body"></tbody>
-        </table>
-        <div class="empty-state" id="empty-state" hidden>
-          <p class="empty-title">Δεν έχεις καταγράψει αγώνες ακόμα</p>
-          <button class="btn btn-primary" id="btn-empty-add">+ Νέος αγώνας</button>
-        </div>
+<section class="lower-grid">
+  <div class="panel panel-wide">
+    <div class="panel-head"><h2>Καταγραφή αγώνων</h2></div>
+    <div class="table-wrap">
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th>Ημερομηνία</th><th>Διοργάνωση</th><th>Αγώνας</th><th>Ρόλος</th>
+            <th>Αμοιβή</th><th>Καθαρό</th><th>Αυτοαξ.</th><th>Παρατηρητής</th><th>Κάρτες</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" hidden>
+        <p class="empty-title">Δεν έχεις καταγράψει αγώνες ακόμα</p>
+        <button class="btn btn-primary" id="btn-empty-add">+ Νέος αγώνας</button>
       </div>
     </div>
-  </section>
-</div>
+  </div>
+</section>
 
 <div class="drawer-backdrop" id="drawer-backdrop" hidden>
   <form class="drawer" id="fixture-form">
@@ -184,6 +210,33 @@
     <div class="drawer-foot">
       <button type="button" class="btn btn-ghost" id="btn-delete-fixture" hidden>Διαγραφή</button>
       <button type="button" class="btn btn-ghost" id="btn-cancel-fixture">Άκυρο</button>
+      <button type="submit" class="btn btn-primary">Αποθήκευση</button>
+    </div>
+  </form>
+</div>
+
+<div class="drawer-backdrop" id="profile-drawer-backdrop" hidden>
+  <form class="drawer" id="profile-form">
+    <div class="drawer-head">
+      <h2>Το προφίλ μου</h2>
+      <button type="button" class="icon-btn" id="profile-drawer-close">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <label class="field"><span>Όνομα</span><input type="text" id="p-first-name"></label>
+      <label class="field"><span>Επώνυμο</span><input type="text" id="p-last-name"></label>
+      <label class="field"><span>Έτος γέννησης</span><input type="number" id="p-birth-year" min="1940" max="2015"></label>
+      <label class="field"><span>Σχολή διαιτησίας</span><input type="text" id="p-referee-school"></label>
+      <label class="field"><span>Κατάσταση αξιολόγησης</span>
+        <select id="p-evaluation-status">
+          <option value="Μη Αξιολογημένος">Μη Αξιολογημένος</option>
+          <option value="Αξιολογημένος">Αξιολογημένος</option>
+        </select>
+      </label>
+      <label class="field"><span>Τηλέφωνο</span><input type="text" id="p-phone"></label>
+      <label class="field"><span>Διεύθυνση κατοικίας</span><input type="text" id="p-address"></label>
+    </div>
+    <div class="drawer-foot">
+      <button type="button" class="btn btn-ghost" id="btn-cancel-profile">Άκυρο</button>
       <button type="submit" class="btn btn-primary">Αποθήκευση</button>
     </div>
   </form>
