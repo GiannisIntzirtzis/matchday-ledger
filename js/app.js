@@ -469,13 +469,19 @@ function renderCompetitionChart(rows) {
     data: { labels: allCompetitions, datasets },
     options: {
       scales: {
-        x: { ticks: { autoSkip: false, maxRotation: 60, minRotation: 60 } },
+        x: {
+          ticks: {
+            autoSkip: false,
+            maxRotation: 60,
+            minRotation: 60,
+            font: { size: window.innerWidth < 480 ? 9 : 11 }
+          }
+        },
         y: { beginAtZero: true, ticks: { stepSize: 1 } },
       },
     },
   });
 }
-
 function renderRoleChart(rows) {
   const counts = {};
   rows.forEach(f => {
