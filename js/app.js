@@ -437,7 +437,9 @@ function renderProfitChart(rows) {
 }
 
 function renderCompetitionChart(rows) {
-  const allCompetitions = Object.values(COMPETITION_GROUPS).flat();
+  const allCompetitions = activeCategory === 'all'
+    ? Object.values(COMPETITION_GROUPS).flat()
+    : (COMPETITION_GROUPS[activeCategory] || []);
   const roles = ['Διαιτητής', 'Βοηθός Διαιτητής 1', 'Βοηθός Διαιτητής 2'];
   const roleColors = {
     'Διαιτητής': '#2E8B57',
