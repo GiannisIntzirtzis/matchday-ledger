@@ -49,6 +49,10 @@ const signupFields = document.getElementById('signup-fields');
 
 const signupRequiredFields = ['auth-first-name', 'auth-last-name', 'auth-birth-year', 'auth-referee-school'];
 
+signupRequiredFields.forEach(id => {
+  document.getElementById(id).required = false;
+});
+
 authToggleBtn.addEventListener('click', () => {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   authSubmitBtn.textContent = authMode === 'signin' ? 'Σύνδεση' : 'Εγγραφή';
